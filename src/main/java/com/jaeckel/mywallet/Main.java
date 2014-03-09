@@ -25,82 +25,87 @@ import com.google.bitcoin.store.UnreadableWalletException;
 import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.wallet.WalletFiles;
 
+import com.google.zxing.client.j2se.MatrixToImageWriter;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
 
+import com.jaeckel.mywallet.listener.WalletListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
+import java.nio.charset.CharacterCodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetEncoder;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 
 public class Main implements Runnable {
 
+    public static final Logger Log = LoggerFactory.getLogger(com.jaeckel.mywallet.Main.class);
 
-	public static final Logger Log = LoggerFactory.getLogger(com.jaeckel.mywallet.Main.class);
-	public static void main(String[] args) {
+    public static void main(String[] args) {
+        Log.info("-> main()");
+        new Thread(new com.jaeckel.mywallet.Main()).start();
 
-		Log.info("-> main()");
+    }
 
-		new Thread(new com.jaeckel.mywallet.Main()).start();
+    public void run() {
+        Log.info("-> run()");
 
-
-	}
-
-	public void run() {
-		Log.info("-> run()");
-
-		MainNetParams netParams = new MainNetParams();
+        MainNetParams netParams = new MainNetParams();
         Log.info("Got netParams: " + netParams);
 
         Wallet wallet = get_wallet(netParams);
-		Log.info("Got wallet.");
+        Log.info("Got wallet.");
 
-		List<ECKey> keys = wallet.getKeys();
-		Address address = keys.get(0).toAddress(netParams);
-
-
-		String uri = BitcoinURI.convertToBitcoinURI(address.toString(),
-				new BigInteger("10000"), "MY Wallet", "");
-
-		Log.info("Wallet address: URI: " + uri);
-
-		int widthHeight = 150;
-
-		File blockStoreFile = new File("ev3_spv_block_store");
-		long offset = 0; // 86400 * 30;
-		try {
-			SPVBlockStore blockStore = new SPVBlockStore(netParams,
-					blockStoreFile);
-			Log.info("SPVBlockStore instantiated");
-
-			InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
-			CheckpointManager.checkpoint(netParams, stream, blockStore,
-					wallet.getEarliestKeyCreationTime() - offset);
-
-			BlockChain blockChain = new BlockChain(netParams, wallet,
-					blockStore);
+        List<ECKey> keys = wallet.getKeys();
+        Address address = keys.get(0).toAddress(netParams);
 
 
-			PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
-			peerGroup.addWallet(wallet);
-			peerGroup.setFastCatchupTimeSecs(wallet.getEarliestKeyCreationTime() - offset);
+        String uri = BitcoinURI.convertToBitcoinURI(address.toString(),
+                new BigInteger("10000"), "MY Wallet", "");
+
+        Log.info("Wallet address: URI: " + uri);
+        int widthHeight = 150;
+
+        encodeAndWriteQrCode(uri, widthHeight);
+        //   System.exit(0);
+
+        File blockStoreFile = new File("ev3_spv_block_store");
+        long offset = 0; // 86400 * 30;
+        try {
+            SPVBlockStore blockStore = new SPVBlockStore(netParams,
+                    blockStoreFile);
+            Log.info("SPVBlockStore instantiated");
+
+            InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
+            CheckpointManager.checkpoint(netParams, stream, blockStore,
+                    wallet.getEarliestKeyCreationTime() - offset);
+
+            BlockChain blockChain = new BlockChain(netParams, wallet,
+                    blockStore);
+
+
+            PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
+            peerGroup.addWallet(wallet);
+            peerGroup.setFastCatchupTimeSecs(wallet.getEarliestKeyCreationTime() - offset);
 //			peerGroup.setBloomFilterFalsePositiveRate(0.5);
             // LocalPeer localPeer = new LocalPeer();
-			// peerGroup.addPeerDiscovery(localPeer);
-			peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
-			// InetAddress ia = InetAddress.getByName("2.221.132.213");
-			// peerGroup.addAddress(new PeerAddress(ia, 8333));
-			Log.info("Starting peerGroup ...");
-			peerGroup.startAndWait();
+            // peerGroup.addPeerDiscovery(localPeer);
+            peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
+            // InetAddress ia = InetAddress.getByName("2.221.132.213");
+            // peerGroup.addAddress(new PeerAddress(ia, 8333));
+            Log.info("Starting peerGroup ...");
+            peerGroup.startAndWait();
 
-            PeerEventListener listener = new TxListener();
-            peerGroup.addEventListener(listener);
+//            PeerEventListener listener = new TxListener();
+//            peerGroup.addEventListener(listener);
 
             Log.info("Installing WalletListener!");
             WalletEventListener walletEventListener = new WalletListener();
@@ -109,38 +114,75 @@ public class Main implements Runnable {
             peerGroup.startBlockChainDownload(new DownloadListener() {
 
             });
+        } catch (BlockStoreException e) {
+            Log.error("Caught BlockStoreException: ", e);
+        } catch (UnknownHostException x) {
+            Log.error("Caught UnknownHostException: ", x);
+        } catch (FileNotFoundException c) {
+            Log.error("Caught BlockStoreException: ", c);
+        } catch (IOException ie) {
+            Log.error("Caught BlockStoreException: ", ie);
         }
-		catch (BlockStoreException e) {
-			Log.error("Caught BlockStoreException: ", e);
-		}
-		catch (UnknownHostException x) {
-			Log.error("Caught UnknownHostException: ", x);
-		}
-		catch (FileNotFoundException c) {
-			Log.error("Caught BlockStoreException: ", c);
-		}
-		catch (IOException ie) {
-			Log.error("Caught BlockStoreException: ", ie);
-		}
-	}
+    }
 
-	public static Wallet get_wallet(MainNetParams netParams) {
+    private void encodeAndWriteQrCode(String uri, int widthHeight) {
+        Charset charset = Charset.forName("ISO-8859-1");
+        CharsetEncoder encoder = charset.newEncoder();
+        byte[] b = null;
+        try {
+            // Convert a string to ISO-8859-1 bytes in a ByteBuffer
+            ByteBuffer bbuf = encoder.encode(CharBuffer.wrap(uri));
+            b = bbuf.array();
+        } catch (CharacterCodingException e) {
+            System.out.println(e.getMessage());
+        }
+
+        String data = null;
+        try {
+            data = new String(b, "ISO-8859-1");
+        } catch (UnsupportedEncodingException e) {
+            System.out.println(e.getMessage());
+        }
+
+        // get a byte matrix for the data
+        BitMatrix matrix = null;
+        int h = widthHeight;
+        int w = widthHeight;
+        com.google.zxing.Writer writer = new QRCodeWriter();
+        try {
+            matrix = writer.encode(data,
+                    com.google.zxing.BarcodeFormat.QR_CODE, w, h);
+        } catch (com.google.zxing.WriterException e) {
+            System.out.println(e.getMessage());
+        }
+
+        String filePath = "qr.png";
+        File file = new File(filePath);
+        try {
+            MatrixToImageWriter.writeToFile(matrix, "PNG", file);
+            System.out.println("printing to " + file.getAbsolutePath());
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static Wallet get_wallet(MainNetParams netParams) {
         Log.info("get_wallet...");
 
-        File walletFile = new File("ev3_spv_wallet_file");
-		Wallet wallet;
-		try {
-			wallet = Wallet.loadFromFile(walletFile);
-		} catch (UnreadableWalletException e) {
-			wallet = new Wallet(netParams);
-			ECKey key = new ECKey();
-			wallet.addKey(key);
-			try {
-				wallet.saveToFile(walletFile);
-			} catch (IOException a) {
-				Log.error("Caught IOException: ", a);
-			}
-		}
+        File walletFile = new File("my_spv_wallet_file");
+        Wallet wallet;
+        try {
+            wallet = Wallet.loadFromFile(walletFile);
+        } catch (UnreadableWalletException e) {
+            wallet = new Wallet(netParams);
+            ECKey key = new ECKey();
+            wallet.addKey(key);
+            try {
+                wallet.saveToFile(walletFile);
+            } catch (IOException a) {
+                Log.error("Caught IOException: ", a);
+            }
+        }
 
         wallet.autosaveToFile(walletFile, 60, TimeUnit.SECONDS, new WalletFiles.Listener() {
             @Override
@@ -154,119 +196,9 @@ public class Main implements Runnable {
             }
         });
         return wallet;
-	}
+    }
 
 }
 
-class WalletListener implements WalletEventListener {
-
-    public static final Logger slf4jLogger = LoggerFactory.getLogger(com.jaeckel.mywallet.Main.class);
 
 
-    @Override
-    public void onCoinsReceived(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
-        slf4jLogger.info("-----> received: prevBalance: " + prevBalance);
-        slf4jLogger.info("-----> received: newBalance: " + newBalance);
-        slf4jLogger.info("-----> received: " + (newBalance.subtract(prevBalance)));
-    }
-
-    @Override
-    public void onCoinsSent(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
-        slf4jLogger.info("-----> sent coins.");
-    }
-
-    @Override
-    public void onReorganize(Wallet wallet) {
-        slf4jLogger.info("-----> onReorganize()");
-    }
-
-    @Override
-    public void onTransactionConfidenceChanged(Wallet wallet, Transaction tx) {
-        slf4jLogger.info("-----> onTransactionConfidenceChanged()");
-    }
-
-    @Override
-    public void onWalletChanged(Wallet wallet) {
-    }
-
-    @Override
-    public void onKeysAdded(Wallet wallet, List<ECKey> keys) {
-        slf4jLogger.info("-----> onKeysAdded()");
-    }
-
-    @Override
-    public void onScriptsAdded(Wallet wallet, List<Script> scripts) {
-        slf4jLogger.info("-----> onScriptsAdded()");
-    }
-}
-
-class TxListener implements PeerEventListener {
-
-	MainNetParams netParams = new MainNetParams();
-
-	public final Logger slf4jLogger = LoggerFactory.getLogger(com.jaeckel.mywallet.Main.class);
-
-	public List<Message> getData (Peer p, GetDataMessage m) {
-		slf4jLogger.info("Message received: " + m);
-		return null;
-	}
-	public void onBlocksDownloaded(Peer p, Block b, int i) {
-		// Log.info("Block downloaded:: " + b);
-	}
-	public void onChainDownloadStarted(Peer arg0, int arg1) {
-		slf4jLogger.info("blockchain download started.");
-	}
-	public void onPeerConnected(Peer arg0, int arg1) {
-		slf4jLogger.info("Peer Connected.");
-	}
-	public void onPeerDisconnected(Peer arg0, int arg1) {
-		slf4jLogger.info("Peer Disonnected.");
-	}
-	public Message onPreMessageReceived(Peer arg0, Message m) {
-		slf4jLogger.info("PreMessage Received:: " + m);
-		return null;
-	}
-	public void onTransaction(Peer peer, Transaction tx) {
-		boolean validTx = true;
-		String txHash = tx.getHashAsString();
-		List<TransactionOutput> txOutputs = tx.getOutputs();
-		for (TransactionOutput output : txOutputs) {
-			TransactionInput input = output.getSpentBy();
-			try {
-				if (output.getValue().compareTo(output.getMinNonDustValue()) != 1) {
-					// Log.info("Output is dust!");
-					validTx = false;
-					break;
-				}
-				// input.verify();
-			}
-			catch (RuntimeException epicfail) {
-				// Log.info("Transaction outpoint verification failed.");
-				validTx = false;
-			}
-		}
-		for (TransactionOutput output : txOutputs) {
-			Script script = new Script(output.getScriptBytes());
-			Address address = script.getToAddress(netParams);
-			// T	ODO: add check of TO address here to see if its to ours
-			try {
-				File walletFile = new File("/home/root/ev3_spv_wallet_file");
-				Wallet wallet;
-				wallet = Wallet.loadFromFile(walletFile);
-				List<ECKey> keys = wallet.getKeys();
-				Address ouraddress = keys.get(0).toAddress(netParams);
-				if (ouraddress == address) {
-					slf4jLogger.info("==============EV3 received money!!!!==================");
-					slf4jLogger.info(" Output TO OUR address !!! from: " + address.toString() +
-							" amount " + output.getValue());
-					slf4jLogger.info("================================");
-
-				} else {
-					// Log.info("our address: " + ouraddress + " TO address: " + address);
-				}
-			} catch (Exception epicfail) {
-				slf4jLogger.error("Uhoh address check stuff failed: " + epicfail.getMessage(), epicfail);
-			}
-		}
-	}
-}
