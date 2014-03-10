@@ -1,33 +1,20 @@
 package com.jaeckel.mywallet;
 
 import com.google.bitcoin.core.Address;
-import com.google.bitcoin.core.Block;
 import com.google.bitcoin.core.BlockChain;
 import com.google.bitcoin.core.CheckpointManager;
 import com.google.bitcoin.core.DownloadListener;
 import com.google.bitcoin.core.ECKey;
-import com.google.bitcoin.core.GetDataMessage;
-import com.google.bitcoin.core.Message;
-import com.google.bitcoin.core.Peer;
-import com.google.bitcoin.core.PeerEventListener;
 import com.google.bitcoin.core.PeerGroup;
-import com.google.bitcoin.core.Transaction;
-import com.google.bitcoin.core.TransactionInput;
-import com.google.bitcoin.core.TransactionOutput;
 import com.google.bitcoin.core.Wallet;
 import com.google.bitcoin.core.WalletEventListener;
 import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.script.Script;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
 import com.google.bitcoin.store.UnreadableWalletException;
 import com.google.bitcoin.uri.BitcoinURI;
 import com.google.bitcoin.wallet.WalletFiles;
-
-import com.google.zxing.client.j2se.MatrixToImageWriter;
-import com.google.zxing.common.BitMatrix;
-import com.google.zxing.qrcode.QRCodeWriter;
 
 import com.jaeckel.mywallet.listener.WalletListener;
 import org.slf4j.Logger;
@@ -36,11 +23,6 @@ import org.slf4j.LoggerFactory;
 import java.io.*;
 import java.math.BigInteger;
 import java.net.UnknownHostException;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetEncoder;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -61,7 +43,7 @@ public class Main implements Runnable {
         MainNetParams netParams = new MainNetParams();
         Log.info("Got netParams: " + netParams);
 
-        Wallet wallet = get_wallet(netParams);
+        Wallet wallet = getWallet(netParams);
         Log.info("Got wallet.");
 
         List<ECKey> keys = wallet.getKeys();
@@ -74,8 +56,7 @@ public class Main implements Runnable {
         Log.info("Wallet address: URI: " + uri);
         int widthHeight = 150;
 
-        encodeAndWriteQrCode(uri, widthHeight);
-        //   System.exit(0);
+        QrHelper.encodeAndWriteQrCode(uri, widthHeight);
 
         File blockStoreFile = new File("ev3_spv_block_store");
         long offset = 0; // 86400 * 30;
@@ -125,49 +106,8 @@ public class Main implements Runnable {
         }
     }
 
-    private void encodeAndWriteQrCode(String uri, int widthHeight) {
-        Charset charset = Charset.forName("ISO-8859-1");
-        CharsetEncoder encoder = charset.newEncoder();
-        byte[] b = null;
-        try {
-            // Convert a string to ISO-8859-1 bytes in a ByteBuffer
-            ByteBuffer bbuf = encoder.encode(CharBuffer.wrap(uri));
-            b = bbuf.array();
-        } catch (CharacterCodingException e) {
-            System.out.println(e.getMessage());
-        }
-
-        String data = null;
-        try {
-            data = new String(b, "ISO-8859-1");
-        } catch (UnsupportedEncodingException e) {
-            System.out.println(e.getMessage());
-        }
-
-        // get a byte matrix for the data
-        BitMatrix matrix = null;
-        int h = widthHeight;
-        int w = widthHeight;
-        com.google.zxing.Writer writer = new QRCodeWriter();
-        try {
-            matrix = writer.encode(data,
-                    com.google.zxing.BarcodeFormat.QR_CODE, w, h);
-        } catch (com.google.zxing.WriterException e) {
-            System.out.println(e.getMessage());
-        }
-
-        String filePath = "qr.png";
-        File file = new File(filePath);
-        try {
-            MatrixToImageWriter.writeToFile(matrix, "PNG", file);
-            System.out.println("printing to " + file.getAbsolutePath());
-        } catch (IOException e) {
-            System.out.println(e.getMessage());
-        }
-    }
-
-    public static Wallet get_wallet(MainNetParams netParams) {
-        Log.info("get_wallet...");
+    public static Wallet getWallet(MainNetParams netParams) {
+        Log.info("getWallet...");
 
         File walletFile = new File("my_spv_wallet_file");
         Wallet wallet;
