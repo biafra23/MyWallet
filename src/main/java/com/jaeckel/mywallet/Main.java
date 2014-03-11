@@ -61,32 +61,23 @@ public class Main implements Runnable {
         File blockStoreFile = new File("ev3_spv_block_store");
         long offset = 0; // 86400 * 30;
         try {
-            SPVBlockStore blockStore = new SPVBlockStore(netParams,
-                    blockStoreFile);
+            SPVBlockStore blockStore = new SPVBlockStore(netParams, blockStoreFile);
             Log.info("SPVBlockStore instantiated");
 
             InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
             CheckpointManager.checkpoint(netParams, stream, blockStore,
                     wallet.getEarliestKeyCreationTime() - offset);
 
-            BlockChain blockChain = new BlockChain(netParams, wallet,
-                    blockStore);
+            BlockChain blockChain = new BlockChain(netParams, wallet, blockStore);
 
 
             PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
             peerGroup.addWallet(wallet);
             peerGroup.setFastCatchupTimeSecs(wallet.getEarliestKeyCreationTime() - offset);
-//			peerGroup.setBloomFilterFalsePositiveRate(0.5);
-            // LocalPeer localPeer = new LocalPeer();
-            // peerGroup.addPeerDiscovery(localPeer);
             peerGroup.addPeerDiscovery(new DnsDiscovery(netParams));
-            // InetAddress ia = InetAddress.getByName("2.221.132.213");
-            // peerGroup.addAddress(new PeerAddress(ia, 8333));
+
             Log.info("Starting peerGroup ...");
             peerGroup.startAndWait();
-
-//            PeerEventListener listener = new TxListener();
-//            peerGroup.addEventListener(listener);
 
             Log.info("Installing WalletListener!");
             WalletEventListener walletEventListener = new WalletListener();
@@ -100,9 +91,9 @@ public class Main implements Runnable {
         } catch (UnknownHostException x) {
             Log.error("Caught UnknownHostException: ", x);
         } catch (FileNotFoundException c) {
-            Log.error("Caught BlockStoreException: ", c);
+            Log.error("Caught FileNotFoundException: ", c);
         } catch (IOException ie) {
-            Log.error("Caught BlockStoreException: ", ie);
+            Log.error("Caught IOException: ", ie);
         }
     }
 
