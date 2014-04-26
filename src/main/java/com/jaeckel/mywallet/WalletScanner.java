@@ -86,8 +86,11 @@ public class WalletScanner {
 
 //        System.exit(0);
 
+        //Use only localhost
+        //usePeerGroup(netParams, getLocalHostPeerDiscovery());
 
-        usePeerGroup(netParams);
+        //DnsDiscovery
+        usePeerGroup(netParams, new DnsDiscovery(netParams));
 //        useSinglePeer(netParams);
 
     }
@@ -119,80 +122,24 @@ public class WalletScanner {
 
     }
 
-//    private void useSinglePeer(MainNetParams netParams) throws InterruptedException {
-//        File blockStoreFile = new File("ws_spv_block_store");
-//        SPVBlockStore blockStore;
-//        Peer peer;
-//        try {
-//            blockStore = new SPVBlockStore(netParams, blockStoreFile);
-//
-//            BlockChain blockChain = new BlockChain(netParams, wallets.get(0), blockStore);
-//
-//             peer = new Peer(netParams, blockChain, new PeerAddress(InetAddress.getLocalHost(), 8333), "test app", "0.1") {
-//                @Override
-//                public void connectionOpened() {
-//                    super.connectionOpened();
-//                    Log.info("TCP connect done");
-//                }
-//            };
-//
-//            peer.addEventListener(new AbstractPeerEventListener() {
-//                @Override
-//                public void onPeerConnected(Peer peer, int peerCount) {
-//                    Log.info("Version handshake done");
-//
-//
-//
-//                }
-//
-//                @Override
-//                public void onBlocksDownloaded(Peer peer, Block block, int blocksLeft) {
-//                    Log.info("onBlocksDownloaded() block: " + block);
-//                }
-//
-//                @Override
-//                public void onChainDownloadStarted(Peer peer, int blocksLeft) {
-//                    Log.info("onChainDownloadStarted() blocksLeft: " + blocksLeft);
-//
-//
-//                }
-//            });
-//
-//
-//            SocketAddress address = new InetSocketAddress(InetAddress.getLocalHost(), 8333);
-//            BlockingClient client = new BlockingClient(address, peer, 10000, SocketFactory.getDefault(), null);
-//
-//            for (Wallet wallet : wallets) {
-//
-//                blockChain.addWallet(wallet);
-//                peer.addWallet(wallet);
-//
-//
-//                Log.info("Installing WalletListener!");
-//                WalletEventListener walletEventListener = new WalletListener();
-//
-//                wallet.addEventListener(walletEventListener);
-//            }
-//
-//
-//        } catch (BlockStoreException e) {
-//            e.printStackTrace();
-//        } catch (UnknownHostException e) {
-//            e.printStackTrace();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//        Log.info("Starting blockchain download ...");
-//        peer.startBlockChainDownload();
-//
-//
-//        Thread.sleep(100 * 1000);
-//        logNonEmptyWallets();
-//    }
 
-    private void usePeerGroup(MainNetParams netParams) throws InterruptedException {
+    private PeerDiscovery getLocalHostPeerDiscovery() {
+        return new PeerDiscovery() {
+            @Override
+            public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
+                InetSocketAddress[] result = new InetSocketAddress[1];
+                result[0] = new InetSocketAddress("localhost", 8333);
+                return result;
+            }
+
+            @Override
+            public void shutdown() {
+                Log.info("shutDown");
+            }
+        };
+    }
+
+    private void usePeerGroup(MainNetParams netParams, PeerDiscovery peerDiscovery) throws InterruptedException {
         File blockStoreFile = new File("ws_spv_block_store");
         try {
             SPVBlockStore blockStore = new SPVBlockStore(netParams, blockStoreFile);
@@ -210,22 +157,7 @@ public class WalletScanner {
                 peerGroup.addWallet(wallet);
 
 //            peerGroup.setFastCatchupTimeSecs(netParams.getGenesisBlock().getTimeSeconds());
-                peerGroup.addPeerDiscovery(new PeerDiscovery() {
-                    @Override
-                    public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
-                        InetSocketAddress[] result = new InetSocketAddress[1];
-
-                        result[0] = new InetSocketAddress("localhost", 8333);
-//                        result[1] = new InetSocketAddress("localhost", 8333);
-
-                        return result;
-                    }
-
-                    @Override
-                    public void shutdown() {
-                        Log.info("shutDown");
-                    }
-                });
+                peerGroup.addPeerDiscovery(peerDiscovery);
 
                 Log.info("Starting peerGroup ...");
                 peerGroup.startAndWait();
