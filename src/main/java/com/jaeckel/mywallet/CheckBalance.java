@@ -7,6 +7,8 @@ import com.google.bitcoin.script.Script;
 import com.google.bitcoin.utils.BriefLogFormatter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
 import java.io.File;
@@ -16,27 +18,36 @@ import java.util.List;
 
 
 public class CheckBalance {
+    public static final Logger Log = LoggerFactory.getLogger(CheckBalance.class);
 
     private BigInteger oldBalance;
 
     public static void main(String[] args) throws Exception {
+       new CheckBalance().run();
+    }
+
+    public void run() throws Exception {
+
         // This line makes the log output more compact and easily read, especially when using the JDK log adapter.
         BriefLogFormatter.init();
         // Figure out which network we should connect to. Each one gets its own set of files.
         final NetworkParameters params = new MainNetParams();
         final String filePrefix = "forwarding-service-testnet";
         // Parse the address given as the first parameter.
+//        final Address forwardingAddress = new Address(params, "1CPfLk1oAJwzFSUa7PrkfFyn5YE1zwUBjV"); //note, I replace bogusHash when I really run
         final Address forwardingAddress = new Address(params, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"); //note, I replace bogusHash when I really run
         // Start up a basic app using a class that automates some boilerplate.
         final WalletAppKit kit = new WalletAppKit(params, new File("."), filePrefix);
-        kit.connectToLocalHost();
+//        kit.connectToLocalHost();
         kit.setAutoSave(true);
 
-        kit.startAndWait();
+        Service.State fooState = kit.startAndWait();
 
-//        ECKey key = new ECKey(null, Hex.decode("02907f5606f848b94e7b1655601f695d1a58347ef117e1c907a8b30eafa36fab79"));
-//        key.setCreationTimeSeconds(new Date().getTime());
-//        kit.wallet().addKey(key);
+        Log.info("State: " + fooState);
+
+        ECKey key = new ECKey(null, Hex.decode("02907f5606f848b94e7b1655601f695d1a58347ef117e1c907a8b30eafa36fab79"));
+        key.setCreationTimeSeconds(new Date().getTime());
+        kit.wallet().addKey(key);
 
         kit.wallet().addWatchedAddress(forwardingAddress);
 
@@ -66,6 +77,6 @@ public class CheckBalance {
 
 
         System.out.println("You have : " + kit.wallet().getBalance(Wallet.BalanceType.AVAILABLE) + " Satoshi");
-        System.exit(0);
+//        System.exit(0);
     }
 }
