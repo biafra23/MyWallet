@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 public class WalletScanner {
 
-    public static final Logger Log = LoggerFactory.getLogger(com.jaeckel.mywallet.WalletScanner.class);
+    public static final Logger Log = LoggerFactory.getLogger(WalletScanner.class);
     //    private Wallet wallet;
     private List<Wallet> wallets = new ArrayList<Wallet>();
 
@@ -47,13 +47,18 @@ public class WalletScanner {
     public void run() throws InterruptedException, UnreadableWalletException, AddressFormatException {
 
 
-//        ECKey ev3Key = showWallet("/Users/biafra/ev3_spv_wallet_file");
+        //ECKey ev3Key = showWallet("/Users/biafra/ev3_spv_wallet_file");
 
         MainNetParams netParams = new MainNetParams();
         Log.info("Got netParams: " + netParams);
         Wallet wallet = new Wallet(netParams);
 
-        wallet.addWatchedAddress(new Address(netParams, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"));
+        ECKey key = new ECKey(null, new BigInteger(Hex.decode("02907f5606f848b94e7b1655601f695d1a58347ef117e1c907a8b30eafa36fab79")));
+
+        //wallet.addWatchedAddress(new Address(netParams, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"));
+
+        wallet.addKey(key);
+
         wallets.add(wallet);
 
 //        for (int i = 0; i < 10; i++) {
@@ -84,13 +89,12 @@ public class WalletScanner {
 
         logNonEmptyWallets();
 
-//        System.exit(0);
 
         //Use only localhost
-        //usePeerGroup(netParams, getLocalHostPeerDiscovery());
+        usePeerGroup(netParams, getLocalHostPeerDiscovery());
 
         //DnsDiscovery
-        usePeerGroup(netParams, new DnsDiscovery(netParams));
+//        usePeerGroup(netParams, new DnsDiscovery(netParams));
 //        useSinglePeer(netParams);
 
     }
@@ -145,13 +149,14 @@ public class WalletScanner {
             SPVBlockStore blockStore = new SPVBlockStore(netParams, blockStoreFile);
             Log.info("SPVBlockStore instantiated");
 
-            InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
-            CheckpointManager.checkpoint(netParams, stream, blockStore, netParams.getGenesisBlock().getTimeSeconds() * 1000);
+//            InputStream stream = getClass().getClassLoader().getResourceAsStream("checkpoints");
+//            CheckpointManager.checkpoint(netParams, stream, blockStore, netParams.getGenesisBlock().getTimeSeconds() * 1000);
             BlockChain blockChain = new BlockChain(netParams, wallets.get(0), blockStore);
 
             peerGroup = new PeerGroup(netParams, blockChain);
 
             for (Wallet wallet : wallets) {
+                Log.info("Wallet: " + wallet);
 
                 blockChain.addWallet(wallet);
                 peerGroup.addWallet(wallet);
@@ -172,9 +177,22 @@ public class WalletScanner {
                 @Override
                 protected void progress(double pct, int blocksSoFar, Date date) {
                     super.progress(pct, blocksSoFar, date);
-
+                    Log.info("DownloadListener.progress() executed: pct: " + pct);
                     logNonEmptyWallets();
 
+                }
+
+                @Override
+                protected void startDownload(int blocks) {
+                    super.startDownload(blocks);
+                    Log.info("startDownload(): blocks: " + blocks);
+
+                }
+
+                @Override
+                public void doneDownload() {
+                    super.doneDownload();
+                    Log.info("doneDownload()");
                 }
             });
 //            Log.info("Spending money");
@@ -182,21 +200,25 @@ public class WalletScanner {
 
         } catch (BlockStoreException e) {
             Log.error("Caught BlockStoreException: ", e);
-        } catch (UnknownHostException x) {
-            Log.error("Caught UnknownHostException: ", x);
-        } catch (FileNotFoundException c) {
-            Log.error("Caught FileNotFoundException: ", c);
-        } catch (IOException ie) {
-            Log.error("Caught IOException: ", ie);
+//        } catch (UnknownHostException x) {
+//            Log.error("Caught UnknownHostException: ", x);
+//        } catch (FileNotFoundException c) {
+//            Log.error("Caught FileNotFoundException: ", c);
+//        } catch (IOException ie) {
+//            Log.error("Caught IOException: ", ie);
         }
 
+        Log.info("Sleeping...");
 
         Thread.sleep(100 * 1000);
         logNonEmptyWallets();
+
+        Log.info("Done.");
     }
 
     private void logNonEmptyWallets() {
         for (Wallet wallet : wallets) {
+            Log.info("Wallet: " + wallet);
             if (wallet.getBalance().compareTo(new BigInteger("0")) > 0) {
 
                 Log.debug("secKey: " + showBytes(wallet.getKeys().get(0).getPrivKeyBytes()) + ": Balance: " + wallet.getBalance());

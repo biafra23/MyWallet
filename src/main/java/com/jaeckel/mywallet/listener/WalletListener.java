@@ -25,30 +25,31 @@ public class WalletListener implements WalletEventListener {
 
     @Override
     public void onCoinsSent(Wallet wallet, Transaction tx, BigInteger prevBalance, BigInteger newBalance) {
-        //slf4jLogger.info("-----> sent coins.");
+        slf4jLogger.info("-----> sent coins.");
     }
 
     @Override
     public void onReorganize(Wallet wallet) {
-        //slf4jLogger.info("-----> onReorganize()");
+        slf4jLogger.info("-----> onReorganize()");
     }
 
     @Override
     public void onTransactionConfidenceChanged(Wallet wallet, Transaction tx) {
-        //slf4jLogger.info("-----> onTransactionConfidenceChanged()");
+        slf4jLogger.info("-----> onTransactionConfidenceChanged()");
     }
 
     @Override
     public void onWalletChanged(Wallet wallet) {
+        // happens really often
     }
 
     @Override
     public void onKeysAdded(Wallet wallet, List<ECKey> keys) {
-        //slf4jLogger.info("-----> onKeysAdded()");
+        slf4jLogger.info("-----> onKeysAdded()");
     }
 
     @Override
     public void onScriptsAdded(Wallet wallet, List<Script> scripts) {
-        //slf4jLogger.info("-----> onScriptsAdded()");
+        slf4jLogger.info("-----> onScriptsAdded()");
     }
 }

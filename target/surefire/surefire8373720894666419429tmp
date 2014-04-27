@@ -1,0 +1,6 @@
+#surefire
+#Sun Apr 27 02:01:23 CEST 2014
+user.dir=/Users/biafra/MyWallet
+exec.mainClass=com.jaeckel.mywallet.WalletScanner
+localRepository=/Users/biafra/.m2/repository
+basedir=/Users/biafra/MyWallet
