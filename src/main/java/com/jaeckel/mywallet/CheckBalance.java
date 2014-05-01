@@ -13,55 +13,46 @@ import org.spongycastle.util.encoders.Hex;
 
 import java.io.File;
 import java.math.BigInteger;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 public class CheckBalance {
     public static final Logger Log = LoggerFactory.getLogger(CheckBalance.class);
 
-    private BigInteger oldBalance;
+    private long timestamp;
+    private byte[] pubKey;
+    private String hexPubKey;
 
     public static void main(String[] args) throws Exception {
-       new CheckBalance().run();
+        new CheckBalance("034c643969d8e3f821c9cc8f714824a7ff62645df9b8af12ac18fdfb44581a195e", 1398801057L).run();
+        System.exit(0);
     }
 
-    public void run() throws Exception {
+    public CheckBalance(String hexPubKey, long timestamp) {
+
+        this.pubKey = Hex.decode(hexPubKey);
+        this.timestamp = timestamp;
+        this.hexPubKey = hexPubKey;
+    }
+
+    public long run() throws Exception {
 
         // This line makes the log output more compact and easily read, especially when using the JDK log adapter.
         BriefLogFormatter.init();
         // Figure out which network we should connect to. Each one gets its own set of files.
         final NetworkParameters params = new MainNetParams();
-        final String filePrefix = "forwarding-service-testnet";
-        // Parse the address given as the first parameter.
-//        final Address forwardingAddress = new Address(params, "1CPfLk1oAJwzFSUa7PrkfFyn5YE1zwUBjV"); //note, I replace bogusHash when I really run
-        final Address forwardingAddress = new Address(params, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"); //MultiBit ?
-//        final Address forwardingAddress = new Address(params, "1KBmj2QQs9yiq3wW2jEJuVnuBybWvLv6fV"); // xapo
-        // Start up a basic app using a class that automates some boilerplate.
+        ECKey key = new ECKey(null, pubKey);
+        key.setCreationTimeSeconds(timestamp);
 
-        ECKey key = new ECKey(null, Hex.decode("02907f5606f848b94e7b1655601f695d1a58347ef117e1c907a8b30eafa36fab79"));
-//        key.setCreationTimeSeconds(new Date().getTime() / 1000 - (60 * 60 * 24 * 1));
-        final MyWalletAppKit kit = new MyWalletAppKit(params, new File("."), filePrefix, Collections.singletonList(key));
+        List<ECKey> keyList = new ArrayList<ECKey>();
+        keyList.add(key);
+        final MyWalletAppKit kit = new MyWalletAppKit(params, new File("."), hexPubKey + "-" + timestamp, keyList);
 
-        kit.connectToLocalHost();
-        kit.setAutoSave(false);
+//        kit.connectToLocalHost();
+        kit.setAutoSave(true);
+        kit.setBlockingStartup(true);
 
         Service.State fooState = kit.startAndWait();
-
-
-        Log.info("State: " + fooState);
-
-
-//        kit.wallet().addKey(key);
-
-
-//        ECKey key = new ECKey(null, Hex.decode("0451b3f1e2bdbaef43169dbf814fbecfcf6e0ee0ae77f207a44e3de43ce623b4e65d3db1701a72fcd673377405e37f7acbec77b9662e3992a6f67a102e26b2716f"));
-//        key.setCreationTimeSeconds(new Date().getTime());
-//        kit.wallet().addKey(key);
-
-//        kit.wallet().addWatchedAddress(forwardingAddress);
 
         kit.wallet().addEventListener(new AbstractWalletEventListener() {
             @Override
@@ -71,27 +62,17 @@ public class CheckBalance {
             }
         });
 
-//        System.out.println("Wallet: " + kit.wallet());
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("02907f5606f848b94e7b1655601f695d1a58347ef117e1c907a8b30eafa36fab79")));
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("57622f345f73e1acadf0de4ce367dff391afa3a7"))); // sec key 0
-        //1CjgioGLRpLyEiFSsLpYdEKfaFjWg3ZWSS
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("0210fdade86b268597e9aa4f2adc314fe459837be831aeb532f04b32c160b4e50a")));
-
-
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("034c643969d8e3f821c9cc8f714824a7ff62645df9b8af12ac18fdfb44581a195e")));
+        Log.info("State: " + fooState);
         System.out.println("Wallet: " + kit.wallet());
+        System.out.println("You have : " + kit.wallet().getBalance(Wallet.BalanceType.AVAILABLE) + " Satoshi (available)");
+        System.out.println("You have : " + kit.wallet().getBalance(Wallet.BalanceType.ESTIMATED) + " Satoshi (estimated)");
 
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("57622f345f73e1acadf0de4ce367dff391afa3a7")));
-//        kit.wallet().addKey(new ECKey(null, Hex.decode("c2f3689ab1d0d6cd8a0cc7ab4d947e8f0e755133")));
-//        kit.wallet().addKey(new ECKey());
+        long result = kit.wallet().getBalance(Wallet.BalanceType.ESTIMATED).longValue();
 
-//        Wallet wallet = kit.wallet();
-//        for (ECKey ecKey : wallet.getKeys()) {
-//            System.out.println("Address: " + ecKey.toAddress(new MainNetParams()));
-//        }
+        kit.stopAndWait();
 
+        return result;
 
-        System.out.println("You have : " + kit.wallet().getBalance(Wallet.BalanceType.AVAILABLE) + " Satoshi");
-        System.exit(0);
     }
+
 }

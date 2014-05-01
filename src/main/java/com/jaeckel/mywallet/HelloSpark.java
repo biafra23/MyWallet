@@ -26,23 +26,25 @@ public class HelloSpark {
             }
         });
 
-        get(new Route("/start") {
+        get(new Route("/balance/:pubkey/:timestamp") {
             @Override
             public Object handle(Request request, Response response) {
-
+                long balance = 0;
                 try {
 
+                    Log.info("response: " + request.params("pubkey"));
+                    Log.info("response: " + request.params("timestamp"));
                     Log.info("response: " + response);
+                    long timestamp = Long.valueOf(request.params("timestamp"));
 
-                    new CheckBalance().run();
-
+                    balance = new CheckBalance(request.params("pubkey"), timestamp).run();
 
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
 
 
-                return "Service started";
+                return "Balance: " + balance ;
             }
         });
 
