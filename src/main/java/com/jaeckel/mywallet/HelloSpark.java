@@ -43,8 +43,7 @@ public class HelloSpark {
                     e.printStackTrace();
                 }
 
-
-                return "Balance: " + balance ;
+                return "" + balance ;
             }
         });
 
