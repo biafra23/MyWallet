@@ -49,12 +49,15 @@ public class CheckBalance {
 
         BriefLogFormatter.init();
         MyWalletAppKit kit = null;
+        String filePrefix = hexPubKey + "-" + timestamp;
+        filePrefix = filePrefix.replaceAll("[^a-z0-9A-Z]", "");
+
         if (pubKey != null) {
             ECKey key = new ECKey(null, pubKey);
             key.setCreationTimeSeconds(timestamp);
-            kit = new MyWalletAppKit(params, new File("."), hexPubKey + "-" + timestamp, key);
+            kit = new MyWalletAppKit(params, new File("."), filePrefix, key);
         } else if (address != null) {
-            kit = new MyWalletAppKit(params, new File("."), hexPubKey + "-" + timestamp, address, timestamp);
+            kit = new MyWalletAppKit(params, new File("."), filePrefix, address, timestamp);
         }
 
 //        kit.connectToLocalHost();
