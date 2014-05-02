@@ -50,7 +50,7 @@ public class CheckBalance {
         BriefLogFormatter.init();
         MyWalletAppKit kit = null;
         String filePrefix = hexPubKey + "-" + timestamp;
-        filePrefix = filePrefix.replaceAll("[^a-z0-9A-Z]", "");
+        filePrefix = filePrefix.replaceAll("[^a-z0-9A-Z\\-]", "");
 
         if (pubKey != null) {
             ECKey key = new ECKey(null, pubKey);
