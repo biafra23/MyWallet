@@ -57,7 +57,7 @@ public class CheckBalance {
             kit = new MyWalletAppKit(params, new File("."), hexPubKey + "-" + timestamp, address, timestamp);
         }
 
-        kit.connectToLocalHost();
+//        kit.connectToLocalHost();
         kit.setAutoSave(true);
         kit.setBlockingStartup(true);
 
