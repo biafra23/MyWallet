@@ -5,8 +5,11 @@ import com.google.bitcoin.core.*;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.store.*;
+import com.sun.tools.internal.xjc.reader.dtd.bindinfo.BIInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.math.BigInteger;
 
 public class FullClient {
 
@@ -46,7 +49,9 @@ public class FullClient {
 
             peerGroup.startAndWait();
 
-            blockStore.calculateBalanceForAddress(new Address(netParams, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"));
+            BigInteger balance = blockStore.calculateBalanceForAddress(new Address(netParams, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"));
+
+            Log.info("Balance: " + balance);
 
         } catch (BlockStoreException e) {
 
