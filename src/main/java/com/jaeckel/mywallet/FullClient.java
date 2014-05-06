@@ -1,16 +1,17 @@
 package com.jaeckel.mywallet;
 
 
+import com.google.bitcoin.core.*;
+import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
-import com.google.bitcoin.store.BlockStore;
-import com.google.bitcoin.store.FullPrunedBlockStore;
-import com.google.bitcoin.store.H2FullPrunedBlockStore;
-import com.google.bitcoin.store.PostgresFullPrunedBlockStore;
-
-import java.io.File;
+import com.google.bitcoin.store.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FullClient {
 
+    public static final Logger Log = LoggerFactory.getLogger(FullClient.class);
+    NetworkParameters netParams = new MainNetParams();
 
     public static void main(String[] args ) {
 
@@ -33,9 +34,26 @@ public class FullClient {
     }
 
     private void connectNetwork() {
-        File blockStoreFile = new File("ws_full_block_store");
 
-//        BlockStore blockStore = new PostgresFullPrunedBlockStore(new MainNetParams(), "full_mode_db", );
+        try {
+
+            PostgresFullPrunedBlockStore blockStore = new PostgresFullPrunedBlockStore(netParams, 0, "localhost", "full_mode_db", "biafra", "");
+            FullPrunedBlockChain blockChain = new FullPrunedBlockChain(netParams, blockStore);
+            PeerDiscovery peerDiscovery = MyUtils.getLocalHostPeerDiscovery();
+
+            PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
+            peerGroup.addPeerDiscovery(peerDiscovery);
+
+            peerGroup.startAndWait();
+
+            blockStore.calculateBalanceForAddress(new Address(netParams, "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx"));
+
+        } catch (BlockStoreException e) {
+
+            Log.error("Exception while opening blockstore", e);
+        } catch (AddressFormatException e) {
+            Log.error("Exception while calculating balance", e);
+        }
 
     }
 

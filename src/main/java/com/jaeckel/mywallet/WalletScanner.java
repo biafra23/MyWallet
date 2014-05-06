@@ -1,10 +1,7 @@
 package com.jaeckel.mywallet;
 
 import com.google.bitcoin.core.*;
-import com.google.bitcoin.net.BlockingClient;
-import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
-import com.google.bitcoin.net.discovery.PeerDiscoveryException;
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.store.BlockStoreException;
 import com.google.bitcoin.store.SPVBlockStore;
@@ -14,22 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.spongycastle.util.encoders.Hex;
 
-import javax.net.SocketFactory;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.SocketAddress;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 public class WalletScanner {
 
@@ -91,7 +79,7 @@ public class WalletScanner {
 
 
         //Use only localhost
-        usePeerGroup(netParams, getLocalHostPeerDiscovery());
+        usePeerGroup(netParams, MyUtils.getLocalHostPeerDiscovery());
 
         //DnsDiscovery
 //        usePeerGroup(netParams, new DnsDiscovery(netParams));
@@ -127,21 +115,7 @@ public class WalletScanner {
     }
 
 
-    private PeerDiscovery getLocalHostPeerDiscovery() {
-        return new PeerDiscovery() {
-            @Override
-            public InetSocketAddress[] getPeers(long timeoutValue, TimeUnit timeoutUnit) throws PeerDiscoveryException {
-                InetSocketAddress[] result = new InetSocketAddress[1];
-                result[0] = new InetSocketAddress("localhost", 8333);
-                return result;
-            }
 
-            @Override
-            public void shutdown() {
-                Log.info("shutDown");
-            }
-        };
-    }
 
     private void usePeerGroup(MainNetParams netParams, PeerDiscovery peerDiscovery) throws InterruptedException {
         File blockStoreFile = new File("ws_spv_block_store");
