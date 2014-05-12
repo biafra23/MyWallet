@@ -9,14 +9,19 @@ import spark.Route;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.math.BigInteger;
 
 import static spark.Spark.get;
 
 
 public class HelloSpark {
     public static final Logger Log = LoggerFactory.getLogger(WalletScanner.class);
-
+    public static FullClient fullClient;
     public static void main(String[] args) throws Exception {
+
+
+        fullClient = new FullClient();
+        fullClient.run();
 
 
         get(new Route("/hello") {
@@ -26,7 +31,7 @@ public class HelloSpark {
             }
         });
 
-        get(new Route("/balance/:pubkey/:timestamp") {
+        get(new Route("/wallet-balance/:pubkey/:timestamp") {
             @Override
             public Object handle(Request request, Response response) {
                 long balance = 0;
@@ -41,6 +46,25 @@ public class HelloSpark {
 
                 } catch (Exception e) {
                     e.printStackTrace();
+                }
+
+                return "" + balance ;
+            }
+        });
+
+        get(new Route("/address-balance/:address") {
+            @Override
+            public Object handle(Request request, Response response) {
+                BigInteger balance = new BigInteger("0");
+                try {
+
+                    Log.info("response: " + request.params("address"));
+                    Log.info("response: " + response);
+
+                    balance = fullClient.getBalanceForAddress(request.params("address"));
+
+                } catch (Exception e) {
+                    Log.error("Exception during processing: ", e);
                 }
 
                 return "" + balance ;
