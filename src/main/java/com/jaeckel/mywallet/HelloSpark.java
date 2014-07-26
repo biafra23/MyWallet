@@ -1,6 +1,5 @@
 package com.jaeckel.mywallet;
 
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import spark.Request;
@@ -13,16 +12,15 @@ import java.math.BigInteger;
 
 import static spark.Spark.get;
 
-
 public class HelloSpark {
+
     public static final Logger Log = LoggerFactory.getLogger(WalletScanner.class);
     public static FullClient fullClient;
-    public static void main(String[] args) throws Exception {
 
+    public static void main(String[] args) throws Exception {
 
         fullClient = new FullClient();
         fullClient.run();
-
 
         get(new Route("/hello") {
             @Override
@@ -48,7 +46,7 @@ public class HelloSpark {
                     e.printStackTrace();
                 }
 
-                return "" + balance ;
+                return "" + balance;
             }
         });
 
@@ -67,7 +65,7 @@ public class HelloSpark {
                     Log.error("Exception during processing: ", e);
                 }
 
-                return "" + balance ;
+                return "" + balance;
             }
         });
 

@@ -9,7 +9,6 @@ import java.io.File;
 
 public class MyWalletAppKit extends WalletAppKit {
 
-
     private ECKey key;
     private Address address;
     private long timestamp;
@@ -17,7 +16,6 @@ public class MyWalletAppKit extends WalletAppKit {
     public MyWalletAppKit(NetworkParameters params, File directory, String filePrefix, ECKey ecKey) {
         super(params, directory, filePrefix);
         this.key = ecKey;
-
     }
 
     public MyWalletAppKit(NetworkParameters params, File directory, String filePrefix, Address address, long timestamp) {
@@ -25,6 +23,7 @@ public class MyWalletAppKit extends WalletAppKit {
         this.address = address;
         this.timestamp = timestamp;
     }
+
     @Override
     protected void onSetupCompleted() {
         super.onSetupCompleted();

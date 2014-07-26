@@ -2,13 +2,17 @@ package com.jaeckel.mywallet;
 
 
 import com.google.bitcoin.core.*;
+import com.google.bitcoin.net.discovery.DnsDiscovery;
 import com.google.bitcoin.net.discovery.PeerDiscovery;
 import com.google.bitcoin.params.MainNetParams;
 import com.google.bitcoin.store.*;
+import com.google.bitcoin.utils.BriefLogFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.math.BigInteger;
+import java.util.List;
 
 public class FullClient {
 
@@ -21,41 +25,22 @@ public class FullClient {
     }
 
     public void run() {
+        BriefLogFormatter.init();
 
         connectBlockChain();
-
-//        String[] addresses = new String[]{
-//                "18Nnr1236PeuVXpceXKbDJbAhWK6dYxaS9",
-//                "1Dh2Pzbqe15QPsrHXrurLCHpY28K6ZGQMx",
-//                "1PBuXpUVcLZEpoTSRC1tLpyV6xtGCvEeJR",
-//                "1KBmj2QQs9yiq3wW2jEJuVnuBybWvLv6fV",
-//                "1E1xPBdS85g8Eocs28NRHU4JQ1PEdbVgPg",
-//                "1LttvufSeNniUFTMRJq46ZRbLhZoQvFVNJ"
-//        };
-//        for (String address : addresses) {
-//            try {
-//
-//                getBalanceForAddress(address);
-//
-//            } catch (BlockStoreException e) {
-//                Log.error("Exception while calculating balance", e);
-//            } catch (AddressFormatException e) {
-//                Log.error("Exception while calculating balance", e);
-//            }
-//        }
     }
 
     private void connectBlockChain() {
 
         try {
 
-            blockStore = new PostgresFullPrunedBlockStore(netParams, 0, "localhost", "full_mode_db", "biafra", "");
+            blockStore = new PostgresFullPrunedBlockStore(netParams, 0, "localhost", "full_mode_db2", "biafra", "");
             FullPrunedBlockChain blockChain = new FullPrunedBlockChain(netParams, blockStore);
             PeerDiscovery peerDiscovery = MyUtils.getLocalHostPeerDiscovery();
+//            PeerDiscovery peerDiscovery = new DnsDiscovery(netParams);
 
-            //Supposed to be faster
+            //faster
             blockChain.setRunScripts(false);
-
 
             PeerGroup peerGroup = new PeerGroup(netParams, blockChain);
             peerGroup.addPeerDiscovery(peerDiscovery);
@@ -65,7 +50,7 @@ public class FullClient {
 
         } catch (BlockStoreException e) {
 
-            Log.error("Exception while opening blockstore", e);
+            Log.error("Exception while opening block store", e);
 
         }
 
